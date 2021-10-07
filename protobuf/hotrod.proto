@@ -1,0 +1,167 @@
+syntax = "proto3";
+
+package hotrod.codec;
+
+// RequestHeader spec
+
+message RequestHeader {
+    int32 magic = 1;
+    int64 messageId = 2;
+    int32 version = 3;
+    int32 opCode = 4;
+    string cacheName = 5;
+    int32 flags = 6;
+    int32 clientIntelligence = 7;
+    int32 topologyId = 8;
+    MediaType keyMediaType = 9;
+    MediaType valueMediaType = 10;
+}
+
+message MediaType {
+    oneof mediaTypeFormat {
+        int32 predefinedType = 1;
+        FullMediaType fullMediaType = 2;
+    }
+}
+
+message FullMediaType {
+    string name = 1;
+    repeated MediaTypeArg args = 2;
+}
+
+message MediaTypeArg {
+    string name = 1;
+    string value = 2;
+}
+
+
+// ResponseHeader spec
+
+message ResponseHeader {
+    int32 magic = 1;
+    int64 messageId = 2;
+    int32 opCode = 3;
+    int32 status = 4;
+    int32 topologyChanged = 5;
+}
+
+message TopologyInfo {
+    int32 topologyId = 1;
+    repeated Server servers = 2;
+    int32 hashFunction = 3;
+    repeated Segment segments = 4;
+}
+
+message Server {
+    string hostname = 1;
+    int32 port = 2;
+}
+
+message Segment {
+    int32 ownerNum = 1;
+    repeated int32 owners = 2;
+}
+
+// Request spec
+
+message Request {
+    RequestHeader header = 1;
+    oneof RequestFormat {
+        RequestEmpty requestEmpty = 2;
+        RequestWithKey requestWithKey = 3;
+        RequestWithKeyValue requestWithKeyValue = 4;
+        RequestQuery requestQuery = 5;
+        RequestAuth requestAuth = 6;
+        RequestExec requestExec = 7;
+    }
+}
+
+// Get (0x03)/Remove (0x0B)/ContainsKey (0x0F)/GetWithVersion (0x11)/GetWithMetadata (0x1B)
+message RequestWithKey {
+    bytes key = 1;
+}
+
+// AuthMechList / Stats
+message RequestEmpty {
+}
+
+// Put (0x01)/PutIfAbsent (0x05)/Replace (0x07)/ ReplaceIfUnmodified
+message RequestWithKeyValue {
+    bytes key = 1;
+    Times times = 2;
+    bytes value = 3;
+}
+
+message Times {
+    int32 timeUnit = 1;
+    int64 lifespan = 2;
+    int64 maxIdle = 3;
+}
+
+message RequestQuery {
+    bytes query = 1;
+}
+
+message RequestAuth {
+    string mech = 1;
+    bytes saslData = 2;
+}
+
+message RequestExec {
+    string scriptName = 1;
+    repeated ExecArg args = 2;
+}
+
+message ExecArg {
+    string name = 1;
+    bytes value = 2;
+}
+
+// Response spec
+
+message Response {
+    ResponseHeader header = 1;
+    oneof RequestFormat {
+        ResponseEmpty responseEmpty = 2;
+        ResponseWithValue responseWithValue = 3;
+        ResponseWithVerValue responseWithVerValue = 4;
+        ResponseWithMetadataValue ResponseWithMetadata = 5;
+        ResponseQuery responseQuery = 6;
+        ResponseAuth responseAuth = 7;
+    }
+}
+
+// Clear/ ContainsKey
+message ResponseEmpty {
+}
+
+// Put (0x02)/ Replace(0x08)/ PutIfAbsent(0x06)/ ReplaceIfUnmodified(0x0A)/ RemoveIfUnmodified (0x0E)
+message ResponseWithValue {
+    bytes value = 1;
+}
+
+// GetWithVersion
+message ResponseWithVerValue {
+    bytes version = 1;
+    bytes value = 2;
+}
+
+// GetWithMetadata
+message ResponseWithMetadataValue {
+    int32 flags = 1;
+    int64 created = 2;
+    int32 lifespan = 3;
+    int64 lastUsed = 4;
+    int32 maxIdle = 5;
+    bytes version = 6;
+    bytes value = 7;
+}
+
+message ResponseQuery {
+    bytes data = 1;
+}
+
+message ResponseAuth {
+    int32 completed = 1;
+    bytes challenge = 2;
+}
